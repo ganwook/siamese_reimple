@@ -3,8 +3,9 @@ import os
 import argparse
 import torch
 import numpy as np
+import copy
 from skimage import io
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 
 random.seed(10)
 
@@ -132,14 +133,14 @@ class OneshotDataset(Dataset):
             for pair in range(2):
                 nm_input_drawer = self.idxs_drawer[pair] + 1
                 nm_cand_drawer = self.idxs_drawer[pair + 2] + 1
-                trial['ways'] = {l : os.path.join(dic['path'], dic['id'] + str(nm_cand_drawer) + '.png') for (l, dic) in dic_alpha.items()}
+                trial['ways'] = {l : os.path.join(dic['path'], dic['id'] + '{:02}'.format(nm_cand_drawer) + '.png') for (l, dic) in dic_alpha.items()}
                 
                 for (label, dic) in dic_alpha.items():
                     trial['label'] = label
-                    trial['input'] = os.path.join(dic['path'], dic['id'] + str(nm_input_drawer) + '.png')
-                    datas.update({idx : trial})
+                    trial['input'] = os.path.join(dic['path'], dic['id'] + '{:02}'.format(nm_input_drawer) + '.png')
+                    datas[idx] = copy.deepcopy(trial)
                     idx += 1
-
+                    
         print(f'{idx} samples are generated.')
         return datas
 
@@ -150,7 +151,7 @@ class OneshotDataset(Dataset):
         """ Generate the one-shot learning samples for evaluation """
         dirs_trial = self.datas[idx]
         input_img = io.imread(dirs_trial['input'])
-        ways_img = {l : io.imread[path] for (l, path) in dirs_trial['ways']}
+        ways_img = {l : io.imread(path) for (l, path) in dirs_trial['ways'].items()}
         label = torch.from_numpy(np.array([dirs_trial['label']], dtype=np.float32)) 
 
         return input_img, ways_img, label
