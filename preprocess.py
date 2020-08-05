@@ -6,6 +6,7 @@ import numpy as np
 import copy
 from skimage import io
 from torch.utils.data import Dataset
+from PIL import Image
 
 random.seed(10)
 
@@ -84,7 +85,7 @@ class VerificationDataset(Dataset):
         """ Generate samples according to the label. """
         img_names = self.datas[idx]['imgs']
         label = self.datas[idx]['label']
-        imgs = [io.imread(img_names[i]) for i in range(2)]
+        imgs = [Image.open(img_names[i]) for i in range(2)]
 
         return imgs[0], imgs[1], torch.from_numpy(np.array([label], dtype=np.float32))
 
@@ -150,8 +151,8 @@ class OneshotDataset(Dataset):
     def __getitem__(self, idx):
         """ Generate the one-shot learning samples for evaluation """
         dirs_trial = self.datas[idx]
-        input_img = io.imread(dirs_trial['input'])
-        ways_img = {l : io.imread(path) for (l, path) in dirs_trial['ways'].items()}
+        input_img = Image.open(dirs_trial['input'])
+        ways_img = {l : Image.open(path) for (l, path) in dirs_trial['ways'].items()}
         label = torch.from_numpy(np.array([dirs_trial['label']], dtype=np.float32)) 
 
         return input_img, ways_img, label
