@@ -19,7 +19,7 @@ class SiameseNN(nn.Module):
                             nn.Conv2d(128, 256, 4),
                             nn.ReLU()
                             )
-        self.linear = nn.Sequential(nn.Linear(9216, 4096), nn.Sigmoid())
+        self.linear = nn.Sequential(nn.Linear(256 * 6 * 6, 4096), nn.Sigmoid())
         self.out    = nn.Linear(4096, 1)
 
     def forward_each(self, x):
@@ -29,9 +29,9 @@ class SiameseNN(nn.Module):
         
         return x
     
-    def forward(self, x1, x2):
-        hidden1 = self.forward_each(x1)
-        hidden2 = self.forward_each(x2)
+    def forward(self, img1, img2):
+        hidden1 = self.forward_each(img1)
+        hidden2 = self.forward_each(img2)
         dist    = torch.abs(hidden1 - hidden2)
         out     = self.out(dist)
 

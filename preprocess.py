@@ -41,11 +41,12 @@ def sample_subtree(path):
 
 class VerificationDataset(Dataset):
     """ Dataset for the Verification Task """
-    def __init__(self, dir_back, n_samples, idxs_back):
+    def __init__(self, dir_back, n_samples, idxs_back, transform=None):
         self.root_dir = dir_back
         self.n_samples = n_samples
         self.idxs_back = idxs_back
         self.datas = self.loadtoMem()
+        self.transform = transform
 
     def loadtoMem(self):
         print(f'begin loading background dataset to the memory')
@@ -85,9 +86,13 @@ class VerificationDataset(Dataset):
         """ Generate samples according to the label. """
         img_names = self.datas[idx]['imgs']
         label = self.datas[idx]['label']
-        imgs = [Image.open(img_names[i]) for i in range(2)]
+        img1, img2 = [Image.open(img_names[i]).convert('L') for i in range(2)]
 
-        return imgs[0], imgs[1], torch.from_numpy(np.array([label], dtype=np.float32))
+        if self.transform:
+            img1 = self.transform(img1)
+            img2 = self.transform(img2)
+
+        return img1, img2, torch.from_numpy(np.array([label], dtype=np.float32))
 
 
 class OneshotDataset(Dataset):
@@ -96,14 +101,15 @@ class OneshotDataset(Dataset):
     args.
         - phase = 'valid' / 'test'
     """
-    def __init__(self, dir_eval, n_ways, idxs_eval, phase):
+    def __init__(self, dir_eval, n_ways, idxs_eval, phase, transform = None):
         self.root_dir = dir_eval
         self.n_ways = n_ways
         self.idxs_drawer = idxs_eval['drawer'][phase]
         self.idxs_alpha = idxs_eval['alphabet'][phase]
         self.phase = phase
         self.datas = self.loadtoMem()
-    
+        self.transform = transform
+
     def loadtoMem(self):
         """ 
         the pair of drawers => [0, 1] : [2, 3] = input_image : candidates = pair : (pair + 2)
@@ -151,9 +157,13 @@ class OneshotDataset(Dataset):
     def __getitem__(self, idx):
         """ Generate the one-shot learning samples for evaluation """
         dirs_trial = self.datas[idx]
-        input_img = Image.open(dirs_trial['input'])
-        ways_img = {l : Image.open(path) for (l, path) in dirs_trial['ways'].items()}
+        input_img = Image.open(dirs_trial['input']).convert('L')
+        ways_img = {l : Image.open(path).convert('L') for (l, path) in dirs_trial['ways'].items()}
         label = torch.from_numpy(np.array([dirs_trial['label']], dtype=np.float32)) 
+
+        if self.transform:
+            input_img = self.transform(input_img)
+            ways_img = {l : self.transform(img) for (l, img) in ways_img.items()}
 
         return input_img, ways_img, label
 
