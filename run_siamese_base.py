@@ -15,7 +15,7 @@ from datetime import datetime
 
 from preprocess import VerificationDataset, split_eval, OneshotDataset
 from model import SiameseNN
-from config import *
+
 
 logger = logging.getLogger(__name__)
 
@@ -73,25 +73,14 @@ def train(args, train_dataset, valid_dataset, model):
     train_dataloader = DataLoader(train_dataset, batch_size = args.train_batch_size, shuffle=True, num_workers=args.num_workers)
 
     criterion = nn.BCEWithLogitsLoss()
-    optimizer = optim.SGD([
-        {'params' : model.encoder[0].parameters(), 'lr' : 3e-2, 'momentum' : .5, 'weight_decay' : .05},
-        {'params' : model.encoder[3].parameters(), 'lr' : 3e-2, 'momentum' : .5, 'weight_decay' : .05},
-        {'params' : model.encoder[6].parameters(), 'lr' : 3e-2, 'momentum' : .5, 'weight_decay' : .05},
-        {'params' : model.encoder[9].parameters(), 'lr' : 3e-2, 'momentum' : .5, 'weight_decay' : .05},
-        {'params' : model.linear.parameters()}, {'params' : model.out.parameters()}
-        ], lr = 3e-2, momentum=.5, weight_decay=.05)
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.99)
+    optimizer = optim.Adam(model.parameters(), lr = 3e-2, betas = (.99, .999), weight_decay=.05)
 
     running_loss = 0.0
     best_val = {'epoch' : 0, 'acc' : 0.0}
-    momentum_steps = {i : (MAX_MU[i] - optimizer.param_groups[i]['momentum']) / args.num_train_epochs for i  in range(6)} 
     train_iterator = trange(0, int(args.num_train_epochs), desc="Epoch")
     for epoch in train_iterator:
         epoch_iterator = tqdm(train_dataloader, desc="Iteration")
-        # Annealing the momentum values
-        for i in range(6):
-            optimizer.param_groups[i]['momentum'] += momentum_steps[i]
-        
+
         for step, batch in enumerate(epoch_iterator):
 
             model.train()
@@ -110,7 +99,6 @@ def train(args, train_dataset, valid_dataset, model):
 
             loss.backward()
             optimizer.step()
-            scheduler.step()
 
             if (step % args.log_step) == (args.log_step - 1):
                 print(" - ")
@@ -128,7 +116,7 @@ def train(args, train_dataset, valid_dataset, model):
             if not os.path.exists(output_dir):
                 os.makedirs(output_dir)
             save_model_and_result(model, output_dir, val_acc, 'valid')
-        # Termination
+        # Termination Condition
         elif epoch - best_val['epoch'] > 20:
             save_model_and_result(model, args.out_dir, val_acc, "valid", epoch)
             break
@@ -184,10 +172,10 @@ if __name__ == '__main__':
     TestDataset       = OneshotDataset(args.eval_dir, n_ways=20, idxs_eval=dic_idxs_eval, phase='test',
                                         transform = transforms.ToTensor() )
 
-    logger.info("***** Train the model from scratch *****")
+    logger.info("***** Train a model from scratch *****")
     model = SiameseNN()
     model.to(args.device)
-
+    
     train(args, BackgroundDataset, ValidDataset, model)
 
     """ Load the fine-tuned model for the inference """
