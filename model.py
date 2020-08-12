@@ -10,16 +10,20 @@ class SiameseNN(nn.Module):
                             nn.Conv2d(1, 64, 10),
                             nn.ReLU(),
                             nn.MaxPool2d(2, 2),
+                            nn.BatchNorm2d(64),
                             nn.Conv2d(64, 128, 7),
                             nn.ReLU(),
                             nn.MaxPool2d(2, 2),
+                            nn.BatchNorm2d(128),
                             nn.Conv2d(128, 128, 4),
                             nn.ReLU(),
                             nn.MaxPool2d(2, 2),
+                            nn.BatchNorm2d(128),
                             nn.Conv2d(128, 256, 4),
-                            nn.ReLU()
+                            nn.ReLU(),
+                            nn.BatchNorm2d(256)
                             )
-        self.linear = nn.Sequential(nn.Linear(256 * 6 * 6, 4096), nn.Sigmoid())
+        self.linear = nn.Sequential(nn.Linear(256 * 6 * 6, 4096), nn.Sigmoid(), nn.BatchNorm1d(4096))
         self.out    = nn.Linear(4096, 1)
 
     def forward_each(self, x):

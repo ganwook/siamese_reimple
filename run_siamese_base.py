@@ -51,7 +51,7 @@ def oneshot_eval(args, eval_dataset, model):
                 outputs = model(**inputs)
                 scores = torch.cat((scores, 
                                     outputs.view(1, outputs.size()[0])))
-            predicted = torch.argmax(scores, dim=1).type(label.dtype)
+            predicted = torch.argmax(scores, dim=0).type(label.dtype)
             matched = torch.sum(torch.eq(predicted, 
                                          label.view(label.size()[0])))
             TP += matched
