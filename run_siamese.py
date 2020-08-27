@@ -63,7 +63,7 @@ def oneshot_eval(args, eval_dataset, model):
     return acc
     
 
-def train(args, train_dataset, valid_dataset, model):
+def train(args, train_dataset, valid_dataset, model, hparams=None):
 
     logger.info("***** Running training *****")
     logger.info("  Num examples = %d", len(train_dataset))
@@ -72,14 +72,17 @@ def train(args, train_dataset, valid_dataset, model):
 
     train_dataloader = DataLoader(train_dataset, batch_size = args.train_batch_size, shuffle=True, num_workers=args.num_workers)
 
+    if hparams is None:
+        hparams = INIT_HPARAMS
+
     criterion = nn.BCEWithLogitsLoss()
     optimizer = optim.SGD([
-        {'params' : model.encoder[0].parameters(), 'lr' : 3e-2, 'momentum' : .5, 'weight_decay' : .05},
-        {'params' : model.encoder[3].parameters(), 'lr' : 3e-2, 'momentum' : .5, 'weight_decay' : .05},
-        {'params' : model.encoder[6].parameters(), 'lr' : 3e-2, 'momentum' : .5, 'weight_decay' : .05},
-        {'params' : model.encoder[9].parameters(), 'lr' : 3e-2, 'momentum' : .5, 'weight_decay' : .05},
+        {'params' : model.encoder[0].parameters(), 'lr' : hparams['lr'][0], 'momentum' : hparams['mt'][0], 'weight_decay' : hparams['mt'][0]},
+        {'params' : model.encoder[3].parameters(), 'lr' : hparams['lr'][1], 'momentum' : hparams['mt'][1], 'weight_decay' : hparams['mt'][1]},
+        {'params' : model.encoder[6].parameters(), 'lr' : hparams['lr'][2], 'momentum' : hparams['mt'][2], 'weight_decay' : hparams['mt'][2]},
+        {'params' : model.encoder[9].parameters(), 'lr' : hparams['lr'][3], 'momentum' : hparams['mt'][3], 'weight_decay' : hparams['mt'][3]},
         {'params' : model.linear.parameters()}, {'params' : model.out.parameters()}
-        ], lr = 3e-2, momentum=.5, weight_decay=.05)
+        ], lr = hparams['lr'][4], momentum=hparams['mt'][4], weight_decay=hparams['wd'][4])
     scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.99)
 
     running_loss = 0.0
